@@ -1,0 +1,18 @@
+<div
+  id="job-status-card"
+  hx-get="/jobs/{{ job.id }}/status"
+  hx-trigger="load, every {{ polling_interval_seconds }}s"
+  hx-swap="outerHTML"
+  class="rounded-[2rem] border border-white/10 bg-white/5 p-6 shadow-xl shadow-black/20 backdrop-blur"
+>
+  <div class="flex items-center justify-between gap-4">
+    <div>
+      <p class="text-sm uppercase tracking-[0.3em] text-amber-300/80">Job Created</p>
+      <h3 class="mt-2 text-2xl font-semibold text-white">ジョブを受け付けました</h3>
+      <p class="mt-2 text-sm leading-6 text-stone-300">
+        数秒ごとに状態を更新します。ジョブID: <span class="font-mono text-stone-200">{{ job.id }}</span>
+      </p>
+    </div>
+    <div class="loader-ring"></div>
+  </div>
+</div>

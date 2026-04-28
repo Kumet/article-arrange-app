@@ -1,0 +1,14 @@
+fastapi
+uvicorn[standard]
+jinja2
+python-multipart
+sqlalchemy
+pydantic-settings
+httpx
+beautifulsoup4
+trafilatura
+python-dotenv
+openai
+pyyaml
+markdown
+pytest
