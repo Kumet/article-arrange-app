@@ -3,15 +3,15 @@ from __future__ import annotations
 import json
 import re
 
-from openai import OpenAI
-
 from app.core.config import get_settings
 from app.schemas.article import (
     ExtractedArticleData,
     FaqItem,
+    FixedReviewArticlePayload,
     GeneratedArticlePayload,
     HeadingItem,
     PromptMessages,
+    ReviewSection,
     SeoAnalysis,
 )
 
@@ -37,6 +37,11 @@ def generate_article(
 
     if not settings.openai_api_key:
         raise ArticleGenerationError("OpenAI APIキーが未設定です。.env を確認してください。")
+
+    try:
+        from openai import OpenAI
+    except ImportError as exc:  # pragma: no cover - dependency issue
+        raise ArticleGenerationError("OpenAI SDKが利用できません。依存関係を確認してください。") from exc
 
     client = OpenAI(api_key=settings.openai_api_key)
 
@@ -95,6 +100,62 @@ def _extract_json_block(raw_text: str) -> str:
 
 
 def _sanitize_payload(payload: dict) -> GeneratedArticlePayload:
+    if _is_fixed_review_payload(payload):
+        return _sanitize_fixed_review_payload(payload)
+    return _sanitize_legacy_payload(payload)
+
+
+def _is_fixed_review_payload(payload: dict) -> bool:
+    required_keys = {
+        "product_name_line",
+        "price_line",
+        "item_number_line",
+        "lead_paragraphs",
+        "detail_section",
+        "experience_section",
+        "summary_section",
+        "recommendation_rating",
+    }
+    return required_keys.issubset(payload.keys())
+
+
+def _sanitize_fixed_review_payload(payload: dict) -> GeneratedArticlePayload:
+    review_payload = FixedReviewArticlePayload(
+        title=str(payload.get("title", "")).strip() or "商品レビュー",
+        meta_description=str(payload.get("meta_description", "")).strip() or "元記事と検索上位記事を参考に再構成した商品レビューです。",
+        product_name_line=_normalize_required_line(payload.get("product_name_line"), default="商品名：本文参照"),
+        price_line=_normalize_required_line(payload.get("price_line"), default="購入価格：本文参照"),
+        item_number_line=_normalize_required_line(payload.get("item_number_line"), default="ITEM# 本文参照"),
+        lead_paragraphs=_normalize_paragraphs(payload.get("lead_paragraphs"), minimum=2),
+        detail_section=_build_review_section(payload.get("detail_section"), default_heading="商品詳細", minimum=2),
+        experience_section=_build_review_section(
+            payload.get("experience_section"),
+            default_heading="実際に試した感想",
+            minimum=2,
+        ),
+        summary_section=_build_review_section(payload.get("summary_section"), default_heading="まとめ", minimum=1),
+        recommendation_rating=int(payload.get("recommendation_rating", 3)),
+        copy_avoidance_notes=_normalize_copy_notes(payload.get("copy_avoidance_notes")),
+    )
+
+    article_markdown = _render_fixed_review_markdown(review_payload)
+    outline = [
+        HeadingItem(level=2, heading=review_payload.detail_section.heading),
+        HeadingItem(level=2, heading=review_payload.experience_section.heading),
+        HeadingItem(level=2, heading=review_payload.summary_section.heading),
+    ]
+
+    return GeneratedArticlePayload(
+        title=review_payload.title,
+        meta_description=review_payload.meta_description,
+        outline=outline,
+        article_markdown=article_markdown,
+        faq=[],
+        copy_avoidance_notes=review_payload.copy_avoidance_notes,
+    )
+
+
+def _sanitize_legacy_payload(payload: dict) -> GeneratedArticlePayload:
     outline = [
         HeadingItem(
             level=int(item.get("level", 2)),
@@ -137,74 +198,120 @@ def _sanitize_payload(payload: dict) -> GeneratedArticlePayload:
     )
 
 
+def _normalize_required_line(value: object, *, default: str) -> str:
+    text = str(value or "").strip()
+    return text or default
+
+
+def _normalize_paragraphs(value: object, *, minimum: int) -> list[str]:
+    paragraphs = [str(item).strip() for item in (value or []) if str(item).strip()]
+    if len(paragraphs) >= minimum:
+        return paragraphs
+    raise ValueError("paragraphs are required")
+
+
+def _build_review_section(value: object, *, default_heading: str, minimum: int) -> ReviewSection:
+    data = value if isinstance(value, dict) else {}
+    heading = str(data.get("heading", "")).strip() or default_heading
+    paragraphs = _normalize_paragraphs(data.get("paragraphs"), minimum=minimum)
+    bullets = [str(item).strip() for item in data.get("bullets", []) if str(item).strip()]
+    return ReviewSection(heading=heading, paragraphs=paragraphs, bullets=bullets)
+
+
+def _normalize_copy_notes(value: object) -> list[str]:
+    notes = [str(note).strip() for note in (value or []) if str(note).strip()]
+    if notes:
+        return notes
+    return [
+        "競合記事の本文は使わず、検索意図と不足観点だけを参考に再構成しました。",
+        "参考フォーマットは型だけを取り入れ、文章表現は独自に書き直しています。",
+    ]
+
+
+def _render_fixed_review_markdown(payload: FixedReviewArticlePayload) -> str:
+    sections = [
+        ("lead", payload.lead_paragraphs, []),
+        (payload.detail_section.heading, payload.detail_section.paragraphs, payload.detail_section.bullets),
+        (payload.experience_section.heading, payload.experience_section.paragraphs, payload.experience_section.bullets),
+        (payload.summary_section.heading, payload.summary_section.paragraphs, payload.summary_section.bullets),
+    ]
+
+    lines = [
+        payload.product_name_line,
+        payload.price_line,
+        payload.item_number_line,
+        "",
+    ]
+
+    for index, (heading, paragraphs, bullets) in enumerate(sections):
+        if index > 0:
+            lines.append(f"## {heading}")
+            lines.append("")
+        lines.extend(paragraphs)
+        lines.append("")
+        if bullets:
+            lines.extend(f"- {bullet}" for bullet in bullets)
+            lines.append("")
+
+    lines.append(f"おすすめ度：{'★' * payload.recommendation_rating}")
+    return "\n".join(lines).strip()
+
+
 def _build_mock_article(
     target_keyword: str,
     original_article: ExtractedArticleData,
     analysis: SeoAnalysis,
 ) -> GeneratedArticlePayload:
-    primary_missing = analysis.missing_topics[0] if analysis.missing_topics else "不足トピック"
-    table_title = analysis.suggested_tables[0] if analysis.suggested_tables else f"{target_keyword}の整理表"
-    faq = _default_faq(target_keyword)
-    outline = [
-        HeadingItem(level=2, heading=f"{target_keyword}で押さえる前提"),
-        HeadingItem(level=2, heading=f"{target_keyword}で不足しやすい観点"),
-        HeadingItem(level=3, heading=primary_missing),
-        HeadingItem(level=2, heading=f"{target_keyword}の改善手順"),
-        HeadingItem(level=2, heading="よくある質問"),
-    ]
-
-    article_markdown = f"""## {target_keyword}で押さえる前提
-
-{original_article.summary}
-
-- 読者の検索意図を最初に整理する
-- 元記事にない視点を明確に補う
-- 競合記事は構成の参考としてのみ使う
-
-## {target_keyword}で不足しやすい観点
-
-競合記事の見出し傾向を見ると、特に **{primary_missing}** の観点が不足しやすい状態でした。ここを補うことで、単なる言い換えではなく情報価値を追加できます。
-
-### {primary_missing}
-
-不足していた論点を独立した小見出しとして扱い、読者が次に知りたい内容へ自然につながるよう再構成します。
-
-## {target_keyword}の改善手順
-
-| 項目 | 何を確認するか | 追加するとよい要素 |
-| --- | --- | --- |
-| 検索意図 | 顕在ニーズと潜在ニーズの差 | 導入の結論、比較ポイント |
-| 構成 | 見出しの抜け漏れ | {table_title} |
-| 説得力 | 実務での判断材料があるか | 事例、FAQ、チェックリスト |
-
-1. 元記事の主張を残しつつ、読者が比較したい観点を先に出します。
-2. 競合で頻出した見出しを分解し、そのまま模倣せず不足トピックだけ補います。
-3. FAQと比較表を追加して、検索意図ごとの不安を減らします。
-
-## よくある質問
-
-### {faq[0].question}
-{faq[0].answer}
-
-### {faq[1].question}
-{faq[1].answer}
-
-### {faq[2].question}
-{faq[2].answer}
-"""
-
-    return GeneratedArticlePayload(
-        title=f"{target_keyword}を踏まえて再設計する記事改善ガイド",
-        meta_description=f"{target_keyword}で必要な検索意図と不足トピックを整理し、比較表とFAQを含めて記事を再構成するための実践ガイドです。",
-        outline=outline,
-        article_markdown=article_markdown,
-        faq=faq,
+    primary_missing = analysis.missing_topics[0] if analysis.missing_topics else "見落とされやすいポイント"
+    review_payload = FixedReviewArticlePayload(
+        title=f"{target_keyword}の気になるポイントを整理したレビュー",
+        meta_description=f"{target_keyword}について、元記事の内容と検索上位3記事の傾向を踏まえながら、購入背景から使用感、総評まで個別レビュー型で再構成した記事です。",
+        product_name_line=original_article.title or target_keyword,
+        price_line="購入価格：本文参照",
+        item_number_line="ITEM# 本文参照",
+        lead_paragraphs=[
+            f"{original_article.summary}",
+            f"今回の記事では、{target_keyword}で読者が知りたい購入判断のポイントを先に押さえながら、元記事の情報をレビュー記事の流れに並べ替えています。",
+            "検索上位3記事でよく触れられていた論点も確認しつつ、語り口や構成はそのまま真似せず、必要な観点だけを補いました。",
+        ],
+        detail_section=ReviewSection(
+            heading="商品詳細",
+            paragraphs=[
+                "まずは元記事から読み取れる基本情報を整理し、購入前に見ておきたい条件を先にまとめます。",
+                f"特に {primary_missing} の観点は比較時に見落とされやすいため、本文でも早めに触れて判断しやすくします。",
+            ],
+            bullets=[
+                "元記事から確認できる仕様や特徴を先に明示する",
+                "検索上位記事で頻出した観点を不足分だけ補う",
+            ],
+        ),
+        experience_section=ReviewSection(
+            heading="実際に試した感想",
+            paragraphs=[
+                "使用感や食べた印象のパートでは、元記事の事実を軸にしつつ、読者が気になりやすい良かった点と注意点を自然な流れで書き分けます。",
+                "参考記事に寄せすぎないよう、表現は独自に書き換えながら、検索意図に直結する評価軸を明確にします。",
+            ],
+            bullets=[
+                "最初の印象",
+                "実際に良かった点",
+                "気になる点や向いている人",
+            ],
+        ),
+        summary_section=ReviewSection(
+            heading="まとめ",
+            paragraphs=[
+                f"{target_keyword}で情報収集している読者に向けて、最後に向いている人や買う価値があるかを簡潔にまとめます。",
+                "結論を短く締めることで、参考フォーマットの読み味に近づけつつ一覧ページ風にならないよう整えます。",
+            ],
+            bullets=[],
+        ),
+        recommendation_rating=4,
         copy_avoidance_notes=[
             "競合記事の本文は使わず、見出し傾向と不足トピックのみを反映しました。",
-            "元記事の要点を保持しながら、情報の順番と切り口を再設計しました。",
-            "比較表とFAQを追加し、単純な言い換えではない情報価値を加えました。",
+            "レビュー記事の型だけを借りて、文章の流れと表現は独自に再構成しました。",
         ],
     )
+    return _sanitize_fixed_review_payload(review_payload.model_dump())
 
 
 def _default_faq(target_keyword: str) -> list[FaqItem]:

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from pydantic import BaseModel, Field
 
 
@@ -51,6 +53,26 @@ class SeoAnalysis(BaseModel):
 class PromptMessages(BaseModel):
     system: str
     user: str
+
+
+class ReviewSection(BaseModel):
+    heading: str = Field(min_length=1)
+    paragraphs: list[str] = Field(default_factory=list)
+    bullets: list[str] = Field(default_factory=list)
+
+
+class FixedReviewArticlePayload(BaseModel):
+    title: str = Field(min_length=1)
+    meta_description: str = Field(min_length=1)
+    product_name_line: str = Field(min_length=1)
+    price_line: str = Field(min_length=1)
+    item_number_line: str = Field(min_length=1)
+    lead_paragraphs: list[str] = Field(default_factory=list)
+    detail_section: ReviewSection
+    experience_section: ReviewSection
+    summary_section: ReviewSection
+    recommendation_rating: int = Field(ge=1, le=5)
+    copy_avoidance_notes: list[str] = Field(default_factory=list)
 
 
 class FaqItem(BaseModel):

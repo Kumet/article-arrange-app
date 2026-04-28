@@ -58,16 +58,11 @@
               <p class="mt-2 text-xs leading-5 text-stone-400">開発段階では `ddgs` に固定しています。</p>
             </div>
             <div>
-              <label for="competitor_limit" class="mb-2 block text-sm font-medium text-stone-200">競合取得件数</label>
-              <input
-                id="competitor_limit"
-                name="competitor_limit"
-                type="number"
-                min="1"
-                max="5"
-                value="{{ runtime_settings.competitor_limit }}"
-                class="w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none transition focus:border-white/35"
-              />
+              <label class="mb-2 block text-sm font-medium text-stone-200">参考にする上位記事</label>
+              <div class="rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-stone-200">
+                検索上位{{ runtime_settings.competitor_limit }}件を自動取得
+              </div>
+              <p class="mt-2 text-xs leading-5 text-stone-400">個別レビュー記事の型を安定させるため、競合分析は上位3件に固定しています。</p>
             </div>
             <div>
               <label for="openai_model" class="mb-2 block text-sm font-medium text-stone-200">生成モデル</label>

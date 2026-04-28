@@ -32,7 +32,7 @@
         <div class="flex flex-wrap items-center justify-between gap-4">
           <div>
             <h2 class="text-xl font-semibold text-white">Prompt Editor</h2>
-            <p class="mt-2 text-sm text-stone-400">ジョブで使う `article_rewrite` テンプレートを編集・保存・有効化できます。</p>
+            <p class="mt-2 text-sm text-stone-400">ジョブで使う `article_rewrite` テンプレートを編集・保存・有効化できます。現在は個別レビュー記事の固定フォーマット向けです。</p>
           </div>
           <form action="/jobs/prompts" method="post">
             <input type="hidden" name="system_prompt" value="{{ selected_template.system_prompt if selected_template else '' }}" />

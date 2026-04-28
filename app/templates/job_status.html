@@ -33,7 +33,18 @@
         {{ job.error_message or "記事生成中にエラーが発生しました。" }}
       </div>
     {% else %}
-      <div class="loader-ring"></div>
+      <div class="status-loader-wrap" aria-label="処理中">
+        <div class="status-loader-track" aria-hidden="true">
+          <div class="status-loader-bar"></div>
+        </div>
+        <div class="status-loader" aria-hidden="true">
+          <span class="is-active"></span>
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+        <p class="mt-3 text-xs uppercase tracking-[0.25em] text-stone-500">Processing</p>
+      </div>
     {% endif %}
   </div>
 

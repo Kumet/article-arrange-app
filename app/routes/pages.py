@@ -9,8 +9,9 @@ from sqlalchemy.orm import Session
 from app.core.config import get_settings
 from app.db import crud
 from app.db.session import get_db
-from app.schemas.job import JobRuntimeSettings
+from app.schemas.job import FIXED_COMPETITOR_LIMIT, JobRuntimeSettings
 from app.schemas.prompt import ALLOWED_TEMPLATE_VARIABLES
+from app.services.article_document import build_article_document_html
 
 router = APIRouter()
 settings = get_settings()
@@ -25,16 +26,26 @@ def index(
     db: Session = Depends(get_db),
 ) -> HTMLResponse:
     job = crud.get_article_job_with_details(db, job_id) if job_id else None
+    generated_article = job.generated_article if job else None
     return templates.TemplateResponse(
         request=request,
         name="index.html",
         context={
             "job": job,
-            "generated_article": job.generated_article if job else None,
+            "generated_article": generated_article,
+            "preview_document_html": (
+                build_article_document_html(
+                    title=generated_article.title,
+                    meta_description=generated_article.meta_description,
+                    body_html=generated_article.article_html,
+                )
+                if generated_article
+                else ""
+            ),
             "polling_interval_seconds": settings.polling_interval_seconds,
             "runtime_settings": JobRuntimeSettings(
                 search_provider="ddgs",
-                competitor_limit=settings.competitor_result_limit,
+                competitor_limit=FIXED_COMPETITOR_LIMIT,
                 openai_model=settings.openai_model,
             ),
         },

@@ -1,6 +1,7 @@
 {% set outline = generated_article.outline_json|from_json or [] %}
 {% set faq = generated_article.faq_json|from_json or [] %}
 {% set copy_check = generated_article.copy_check_json|from_json or {} %}
+{% set has_faq = faq|length > 0 %}
 
 <div class="space-y-6">
   <div class="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-xl shadow-black/30 backdrop-blur">
@@ -30,12 +31,20 @@
   <div class="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-xl shadow-black/30 backdrop-blur">
     <div class="mb-4 flex items-center justify-between gap-4">
       <h4 class="text-sm font-semibold uppercase tracking-[0.25em] text-stone-400">HTMLプレビュー</h4>
-      <p class="text-xs text-stone-500">メイン画面ではプレビューを優先表示しています</p>
+      <p class="text-xs text-stone-500">ダウンロードHTMLと同じ見た目をそのまま表示しています</p>
     </div>
-    <div class="rounded-[1.5rem] border border-white/10 bg-white px-6 py-6 text-stone-900 shadow-inner">
-      <div class="preview-html prose max-w-none prose-headings:text-stone-900 prose-strong:text-stone-900 prose-li:text-stone-700">
-        {{ generated_article.article_html | safe }}
+    <div class="preview-stage rounded-[1.5rem] border border-white/10 px-4 py-4 shadow-inner sm:px-5 sm:py-5">
+      <div class="preview-stage-bar">
+        <span class="preview-stage-dot"></span>
+        <span class="preview-stage-dot"></span>
+        <span class="preview-stage-dot"></span>
+        <p class="preview-stage-label">Rendered Article</p>
       </div>
+      <iframe
+        title="HTML preview"
+        class="preview-frame"
+        srcdoc="{{ preview_document_html|e }}"
+      ></iframe>
     </div>
   </div>
 
@@ -83,21 +92,23 @@
 
     <details class="group rounded-[1.5rem] border border-white/10 bg-white/5 p-5 shadow-xl shadow-black/20 backdrop-blur">
       <summary class="flex cursor-pointer list-none items-center justify-between gap-4 text-sm font-semibold text-stone-200">
-        <span>FAQと参考記事</span>
+        <span>{% if has_faq %}FAQと参考記事{% else %}参考にした上位3記事{% endif %}</span>
         <span class="text-xs text-stone-500 transition group-open:rotate-45">＋</span>
       </summary>
-      <div class="mt-5 grid gap-6 lg:grid-cols-[minmax(0,24rem)_minmax(0,1fr)]">
-        <div class="rounded-3xl border border-white/10 bg-black/20 p-5">
-          <h4 class="text-sm font-semibold uppercase tracking-[0.25em] text-stone-400">FAQ</h4>
-          <div class="mt-4 space-y-4">
-            {% for item in faq %}
-              <div class="rounded-2xl border border-white/5 bg-white/[0.03] px-4 py-3">
-                <p class="text-sm font-semibold text-white">{{ item.question }}</p>
-                <p class="mt-2 text-sm leading-6 text-stone-300">{{ item.answer }}</p>
-              </div>
-            {% endfor %}
+      <div class="mt-5 grid gap-6 {% if has_faq %}lg:grid-cols-[minmax(0,24rem)_minmax(0,1fr)]{% endif %}">
+        {% if has_faq %}
+          <div class="rounded-3xl border border-white/10 bg-black/20 p-5">
+            <h4 class="text-sm font-semibold uppercase tracking-[0.25em] text-stone-400">FAQ</h4>
+            <div class="mt-4 space-y-4">
+              {% for item in faq %}
+                <div class="rounded-2xl border border-white/5 bg-white/[0.03] px-4 py-3">
+                  <p class="text-sm font-semibold text-white">{{ item.question }}</p>
+                  <p class="mt-2 text-sm leading-6 text-stone-300">{{ item.answer }}</p>
+                </div>
+              {% endfor %}
+            </div>
           </div>
-        </div>
+        {% endif %}
         <div class="rounded-3xl border border-white/10 bg-black/20 p-5">
           <h4 class="text-sm font-semibold uppercase tracking-[0.25em] text-stone-400">参考にした上位記事</h4>
           <div class="mt-4 space-y-4 text-sm">
