@@ -25,6 +25,10 @@ class ArticleJob(Base):
     user_prompt = Column(Text, nullable=False, default="")
     status = Column(String, nullable=False, default="queued")
     error_message = Column(Text, nullable=True)
+    prompt_template_id = Column(String, ForeignKey("prompt_templates.id"), nullable=True)
+    prompt_version = Column(Integer, nullable=True)
+    system_prompt_snapshot = Column(Text, nullable=False, default="")
+    user_prompt_template_snapshot = Column(Text, nullable=False, default="")
     created_at = Column(DateTime, nullable=False, default=utcnow)
     updated_at = Column(DateTime, nullable=False, default=utcnow, onupdate=utcnow)
 
@@ -40,6 +44,7 @@ class ArticleJob(Base):
         uselist=False,
         cascade="all, delete-orphan",
     )
+    prompt_template = relationship("PromptTemplate", back_populates="jobs")
 
 
 class CompetitorArticle(Base):
@@ -73,3 +78,18 @@ class GeneratedArticle(Base):
     created_at = Column(DateTime, nullable=False, default=utcnow)
 
     job = relationship("ArticleJob", back_populates="generated_article")
+
+
+class PromptTemplate(Base):
+    __tablename__ = "prompt_templates"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    name = Column(String, nullable=False, index=True)
+    version = Column(Integer, nullable=False)
+    system_prompt = Column(Text, nullable=False)
+    user_prompt = Column(Text, nullable=False)
+    is_active = Column(Integer, nullable=False, default=0)
+    created_at = Column(DateTime, nullable=False, default=utcnow)
+    updated_at = Column(DateTime, nullable=False, default=utcnow, onupdate=utcnow)
+
+    jobs = relationship("ArticleJob", back_populates="prompt_template")

@@ -7,6 +7,7 @@ import markdown
 from app.db import crud
 from app.db.session import SessionLocal
 from app.schemas.article import CompetitorArticleData
+from app.schemas.job import JobRuntimeSettings
 from app.services.article_fetcher import fetch_html
 from app.services.article_generator import generate_article
 from app.services.content_extractor import extract_article_content
@@ -18,24 +19,31 @@ from app.services.similarity_checker import check_similarity
 logger = logging.getLogger(__name__)
 
 
-def run_article_job(job_id: str) -> None:
+def run_article_job(job_id: str, runtime_settings: dict | None = None) -> None:
     db = SessionLocal()
     try:
         job = crud.get_article_job(db, job_id)
         if job is None:
             logger.error("Job not found: %s", job_id)
             return
+        job_settings = JobRuntimeSettings.model_validate(runtime_settings or {})
+        if not job.system_prompt_snapshot or not job.user_prompt_template_snapshot:
+            raise RuntimeError("使用するプロンプトが保存されていません。")
 
         crud.update_job_status(db, job_id, "fetching_original")
         original_html = fetch_html(job.original_url)
         original_article = extract_article_content(job.original_url, original_html)
 
         crud.update_job_status(db, job_id, "searching")
-        search_results = search_keyword(job.target_keyword)
+        search_results = search_keyword(
+            job.target_keyword,
+            limit=job_settings.competitor_limit,
+            provider=job_settings.search_provider,
+        )
 
         crud.update_job_status(db, job_id, "fetching_competitors")
         competitor_articles: list[CompetitorArticleData] = []
-        for result in search_results[:3]:
+        for result in search_results[: job_settings.competitor_limit]:
             try:
                 competitor_html = fetch_html(result.url)
                 extracted = extract_article_content(result.url, competitor_html)
@@ -73,12 +81,15 @@ def run_article_job(job_id: str) -> None:
             target_keyword=job.target_keyword,
             user_prompt=job.user_prompt,
             analysis=analysis,
+            system_template=job.system_prompt_snapshot,
+            user_template=job.user_prompt_template_snapshot,
         )
         generated = generate_article(
             prompt=prompt,
             target_keyword=job.target_keyword,
             original_article=original_article,
             analysis=analysis,
+            model_name=job_settings.openai_model,
         )
 
         crud.update_job_status(db, job_id, "checking")

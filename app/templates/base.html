@@ -8,25 +8,27 @@
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
     <link rel="stylesheet" href="{{ url_for('static', path='css/app.css') }}" />
   </head>
-  <body class="min-h-screen bg-stone-950 text-stone-100">
+  <body class="min-h-screen bg-neutral-950 text-stone-100">
     <div class="page-shell">
-      <header class="mx-auto max-w-6xl px-4 pb-10 pt-8 sm:px-6 lg:px-8">
-        <div class="hero-card rounded-[2rem] border border-white/10 bg-white/5 p-8 shadow-2xl shadow-black/20 backdrop-blur">
-          <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-            <div class="max-w-3xl">
-              <p class="text-sm uppercase tracking-[0.35em] text-amber-300/80">FastAPI + HTMX</p>
-              <h1 class="mt-4 text-4xl font-semibold leading-tight text-white sm:text-5xl">
-                AI Article Arranger
-              </h1>
-              <p class="mt-4 max-w-2xl text-base leading-7 text-stone-300 sm:text-lg">
-                元記事、検索意図、競合見出しの差分から、新しい切り口の記事案を生成するための軽量MVPです。
-              </p>
-            </div>
-            <div class="grid gap-2 rounded-3xl border border-white/10 bg-black/20 px-5 py-4 text-sm text-stone-300">
-              <span>検索上位の傾向を要点化</span>
-              <span>コピー回避の注意点も保存</span>
-              <span>Render Free Plan 対応</span>
-            </div>
+      <header class="mx-auto max-w-6xl px-4 pb-6 pt-6 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between rounded-[1.5rem] border border-white/10 bg-white/[0.04] px-5 py-4 shadow-xl shadow-black/30 backdrop-blur">
+          <div>
+            <p class="text-xs uppercase tracking-[0.3em] text-stone-500">Workspace</p>
+            <h1 class="mt-1 text-lg font-semibold text-white sm:text-xl">AI Article Arranger</h1>
+          </div>
+          <div class="flex items-center gap-2">
+            <a
+              href="/prompts"
+              class="rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-xs font-medium text-stone-300 hover:border-white/30 hover:text-white"
+            >
+              Prompts
+            </a>
+            <a
+              href="/guide"
+              class="rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-xs font-medium text-stone-300 hover:border-white/30 hover:text-white"
+            >
+              Guide
+            </a>
           </div>
         </div>
       </header>
