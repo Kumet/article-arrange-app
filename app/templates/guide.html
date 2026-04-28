@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <section class="mx-auto max-w-3xl rounded-[2rem] border border-white/10 bg-white/5 p-6 shadow-xl shadow-black/20 backdrop-blur">
+    <div class="flex items-center justify-between gap-4">
+      <h2 class="text-xl font-semibold text-white">ガイド</h2>
+      <a
+        href="/"
+        class="rounded-2xl border border-white/10 bg-black/20 px-4 py-2 text-sm font-medium text-stone-300 hover:border-white/30 hover:text-white"
+      >
+        戻る
+      </a>
+    </div>
+    <div class="mt-5 space-y-5 text-sm leading-7 text-stone-300">
+      <p>この画面では、元記事URLと対策キーワードから記事生成ジョブを作成します。</p>
+      <p>追加プロンプトは任意です。文体、読者層、入れたい観点がある時だけ開いて入力してください。</p>
+      <p>設定欄では、検索プロバイダ、競合取得件数、生成モデルをフロントエンドからジョブ単位で変更できます。</p>
+      <p>ジョブ作成後はトップページ下部で進行状況を追跡でき、完了後に結果と保存内容を確認できます。</p>
+      <p>ローカル確認用のモックURLは <span class="font-mono text-stone-100">https://example.com/mock/original</span> です。</p>
+    </div>
+  </section>
+{% endblock %}

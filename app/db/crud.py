@@ -1,5 +1,6 @@
 import json
 
+from sqlalchemy import desc
 from sqlalchemy.orm import Session, joinedload
 
 from app.db import models
@@ -11,12 +12,20 @@ def create_article_job(
     original_url: str,
     target_keyword: str,
     user_prompt: str,
+    prompt_template_id: str | None = None,
+    prompt_version: int | None = None,
+    system_prompt_snapshot: str = "",
+    user_prompt_template_snapshot: str = "",
 ) -> models.ArticleJob:
     job = models.ArticleJob(
         original_url=original_url,
         target_keyword=target_keyword,
         user_prompt=user_prompt,
         status="queued",
+        prompt_template_id=prompt_template_id,
+        prompt_version=prompt_version,
+        system_prompt_snapshot=system_prompt_snapshot,
+        user_prompt_template_snapshot=user_prompt_template_snapshot,
     )
     db.add(job)
     db.commit()
@@ -34,6 +43,7 @@ def get_article_job_with_details(db: Session, job_id: str) -> models.ArticleJob 
         .options(
             joinedload(models.ArticleJob.competitor_articles),
             joinedload(models.ArticleJob.generated_article),
+            joinedload(models.ArticleJob.prompt_template),
         )
         .filter(models.ArticleJob.id == job_id)
         .first()
@@ -115,3 +125,86 @@ def create_generated_article(
     db.commit()
     db.refresh(generated_article)
     return generated_article
+
+
+def get_active_prompt_template(db: Session, name: str = "article_rewrite") -> models.PromptTemplate | None:
+    return (
+        db.query(models.PromptTemplate)
+        .filter(models.PromptTemplate.name == name, models.PromptTemplate.is_active == 1)
+        .order_by(desc(models.PromptTemplate.version))
+        .first()
+    )
+
+
+def list_prompt_templates(db: Session, name: str = "article_rewrite") -> list[models.PromptTemplate]:
+    return (
+        db.query(models.PromptTemplate)
+        .filter(models.PromptTemplate.name == name)
+        .order_by(desc(models.PromptTemplate.version))
+        .all()
+    )
+
+
+def get_prompt_template(db: Session, template_id: str) -> models.PromptTemplate | None:
+    return db.query(models.PromptTemplate).filter(models.PromptTemplate.id == template_id).first()
+
+
+def create_prompt_template(
+    db: Session,
+    *,
+    name: str,
+    system_prompt: str,
+    user_prompt: str,
+    is_active: bool = False,
+) -> models.PromptTemplate:
+    latest = (
+        db.query(models.PromptTemplate)
+        .filter(models.PromptTemplate.name == name)
+        .order_by(desc(models.PromptTemplate.version))
+        .first()
+    )
+    next_version = 1 if latest is None else latest.version + 1
+    if is_active:
+        db.query(models.PromptTemplate).filter(models.PromptTemplate.name == name).update({"is_active": 0})
+
+    template = models.PromptTemplate(
+        name=name,
+        version=next_version,
+        system_prompt=system_prompt,
+        user_prompt=user_prompt,
+        is_active=1 if is_active else 0,
+    )
+    db.add(template)
+    db.commit()
+    db.refresh(template)
+    return template
+
+
+def update_prompt_template(
+    db: Session,
+    *,
+    template_id: str,
+    system_prompt: str,
+    user_prompt: str,
+) -> models.PromptTemplate | None:
+    template = get_prompt_template(db, template_id)
+    if template is None:
+        return None
+    template.system_prompt = system_prompt
+    template.user_prompt = user_prompt
+    db.add(template)
+    db.commit()
+    db.refresh(template)
+    return template
+
+
+def activate_prompt_template(db: Session, template_id: str) -> models.PromptTemplate | None:
+    template = get_prompt_template(db, template_id)
+    if template is None:
+        return None
+    db.query(models.PromptTemplate).filter(models.PromptTemplate.name == template.name).update({"is_active": 0})
+    template.is_active = 1
+    db.add(template)
+    db.commit()
+    db.refresh(template)
+    return template

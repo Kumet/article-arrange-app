@@ -1,58 +1,100 @@
 {% extends "base.html" %}
 
 {% block content %}
-  <div class="grid gap-8 lg:grid-cols-[minmax(0,25rem)_minmax(0,1fr)]">
-    <section class="rounded-[2rem] border border-white/10 bg-white/5 p-6 shadow-xl shadow-black/20 backdrop-blur">
+  <div class="space-y-8">
+    <section class="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-xl shadow-black/30 backdrop-blur">
       <div class="mb-6">
-        <h2 class="text-2xl font-semibold text-white">記事生成ジョブ</h2>
-        <p class="mt-2 text-sm leading-6 text-stone-300">
-          元記事URLと対策キーワードを入力すると、HTMXでジョブを作成して結果まで追跡します。
-        </p>
+        <h2 class="text-xl font-semibold text-white">URL記事生成ジョブ</h2>
       </div>
 
-      <form class="space-y-5" hx-post="/jobs" hx-target="#job-area" hx-swap="innerHTML">
-        <div>
-          <label for="original_url" class="mb-2 block text-sm font-medium text-stone-200">元記事URL</label>
-          <input
-            id="original_url"
-            name="original_url"
-            type="url"
-            required
-            placeholder="https://example.com/mock/original"
-            class="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none ring-0 transition placeholder:text-stone-500 focus:border-amber-300/60"
-          />
-          <p class="mt-2 text-xs text-stone-400">ローカル確認用の例: `https://example.com/mock/original`</p>
+      <form class="space-y-6" hx-post="/jobs" hx-target="#job-area" hx-swap="innerHTML">
+        <div class="grid gap-5 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
+          <div>
+            <div class="mb-2 flex items-center justify-between gap-3">
+              <label for="original_url" class="block text-sm font-medium text-stone-200">元記事URL</label>
+              <span class="rounded-full border border-white/15 bg-white/5 px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-stone-300">
+                Required
+              </span>
+            </div>
+            <input
+              id="original_url"
+              name="original_url"
+              type="url"
+              required
+              placeholder="https://example.com/mock/original"
+              class="w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none ring-0 transition placeholder:text-stone-500 focus:border-white/35"
+            />
+            <p class="mt-2 text-xs text-stone-400">ローカル確認用の例: `https://example.com/mock/original`</p>
+          </div>
+          <div>
+            <div class="mb-2 flex items-center justify-between gap-3">
+              <label for="target_keyword" class="block text-sm font-medium text-stone-200">対策キーワード</label>
+              <span class="rounded-full border border-white/15 bg-white/5 px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-stone-300">
+                Required
+              </span>
+            </div>
+            <input
+              id="target_keyword"
+              name="target_keyword"
+              type="text"
+              required
+              placeholder="SEO 記事 リライト"
+              class="w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none transition placeholder:text-stone-500 focus:border-white/35"
+            />
+          </div>
         </div>
 
-        <div>
-          <label for="target_keyword" class="mb-2 block text-sm font-medium text-stone-200">対策キーワード</label>
-          <input
-            id="target_keyword"
-            name="target_keyword"
-            type="text"
-            required
-            placeholder="SEO 記事 リライト"
-            class="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none transition placeholder:text-stone-500 focus:border-amber-300/60"
-          />
-        </div>
+        <details class="group rounded-3xl border border-white/10 bg-black/20 p-4">
+          <summary class="flex cursor-pointer list-none items-center justify-between gap-4 text-sm font-medium text-stone-200">
+            <span>設定を開く</span>
+            <span class="text-xs text-stone-400 transition group-open:rotate-45">＋</span>
+          </summary>
+          <div class="mt-4 grid gap-5 border-t border-white/10 pt-4 lg:grid-cols-3">
+            <div>
+              <label for="search_provider" class="mb-2 block text-sm font-medium text-stone-200">検索プロバイダ</label>
+              <select
+                id="search_provider"
+                name="search_provider"
+                class="w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none transition focus:border-white/35"
+              >
+                <option value="mock" {% if runtime_settings.search_provider == "mock" %}selected{% endif %}>mock</option>
+                <option value="google" {% if runtime_settings.search_provider == "google" %}selected{% endif %}>google</option>
+                <option value="serpapi" {% if runtime_settings.search_provider == "serpapi" %}selected{% endif %}>serpapi</option>
+              </select>
+            </div>
+            <div>
+              <label for="competitor_limit" class="mb-2 block text-sm font-medium text-stone-200">競合取得件数</label>
+              <input
+                id="competitor_limit"
+                name="competitor_limit"
+                type="number"
+                min="1"
+                max="5"
+                value="{{ runtime_settings.competitor_limit }}"
+                class="w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none transition focus:border-white/35"
+              />
+            </div>
+            <div>
+              <label for="openai_model" class="mb-2 block text-sm font-medium text-stone-200">生成モデル</label>
+              <input
+                id="openai_model"
+                name="openai_model"
+                type="text"
+                value="{{ runtime_settings.openai_model }}"
+                class="w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none transition focus:border-white/35"
+              />
+            </div>
+          </div>
+        </details>
 
-        <div>
-          <label for="user_prompt" class="mb-2 block text-sm font-medium text-stone-200">追加プロンプト</label>
-          <textarea
-            id="user_prompt"
-            name="user_prompt"
-            rows="6"
-            placeholder="専門家向けのトーンで、導入は短くしてください。"
-            class="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none transition placeholder:text-stone-500 focus:border-amber-300/60"
-          ></textarea>
+        <div class="flex justify-end">
+          <button
+            type="submit"
+            class="inline-flex min-w-44 items-center justify-center rounded-2xl border border-white/15 bg-white px-6 py-3 text-sm font-semibold text-black transition hover:bg-stone-200"
+          >
+            生成を開始
+          </button>
         </div>
-
-        <button
-          type="submit"
-          class="inline-flex w-full items-center justify-center rounded-2xl bg-amber-300 px-4 py-3 text-sm font-semibold text-stone-900 transition hover:bg-amber-200"
-        >
-          生成を開始
-        </button>
       </form>
     </section>
 
@@ -62,26 +104,8 @@
       {% elif job %}
         {% include "job_created.html" %}
       {% else %}
-        <div class="rounded-[2rem] border border-dashed border-white/10 bg-white/[0.03] p-8 text-stone-300">
-          <h3 class="text-xl font-semibold text-white">このアプリでやること</h3>
-          <div class="mt-4 grid gap-4 sm:grid-cols-2">
-            <div class="rounded-3xl border border-white/10 bg-black/20 p-4">
-              <p class="text-sm font-medium text-amber-300">1. 取得</p>
-              <p class="mt-2 text-sm leading-6 text-stone-300">元記事本文を取得し、見出しと要点を抽出します。</p>
-            </div>
-            <div class="rounded-3xl border border-white/10 bg-black/20 p-4">
-              <p class="text-sm font-medium text-amber-300">2. 分析</p>
-              <p class="mt-2 text-sm leading-6 text-stone-300">検索上位記事の構成を比較し、不足トピックを洗い出します。</p>
-            </div>
-            <div class="rounded-3xl border border-white/10 bg-black/20 p-4">
-              <p class="text-sm font-medium text-amber-300">3. 生成</p>
-              <p class="mt-2 text-sm leading-6 text-stone-300">タイトル、本文、比較表、FAQを含む新しい記事案を生成します。</p>
-            </div>
-            <div class="rounded-3xl border border-white/10 bg-black/20 p-4">
-              <p class="text-sm font-medium text-amber-300">4. 保存</p>
-              <p class="mt-2 text-sm leading-6 text-stone-300">結果とコピー回避メモをSQLiteに保存し、あとから確認できます。</p>
-            </div>
-          </div>
+        <div class="rounded-[2rem] border border-dashed border-white/10 bg-white/[0.03] p-8 text-stone-400">
+          <p class="text-sm">ジョブを作成すると、ここに進行状況と結果を表示します。</p>
         </div>
       {% endif %}
     </section>
