@@ -54,6 +54,13 @@ DATABASE_URL=sqlite:///./app.db
 uvicorn app.main:app --reload
 ```
 
+Makefile を使う場合は次で足ります。
+
+```bash
+make setup
+make run
+```
+
 ブラウザで `http://127.0.0.1:8000/` を開きます。
 
 モックだけで一連の動作を試す場合は次の入力例が使えます。
@@ -100,6 +107,17 @@ SQLite は Render Free Plan では永続化に向かないため、本番運用�
 python -m compileall app
 pytest
 uvicorn app.main:app --reload
+```
+
+Makefile の便利コマンド:
+
+```bash
+make help
+make run
+make run-mock
+make test
+make check
+make mock-request
 ```
 
 ## ディレクトリ概要
