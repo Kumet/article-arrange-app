@@ -1,9 +1,11 @@
 from pydantic import BaseModel, Field, HttpUrl, field_validator
 
+FIXED_COMPETITOR_LIMIT = 3
+
 
 class JobRuntimeSettings(BaseModel):
     search_provider: str = Field(default="mock")
-    competitor_limit: int = Field(default=3, ge=1, le=5)
+    competitor_limit: int = Field(default=FIXED_COMPETITOR_LIMIT, ge=FIXED_COMPETITOR_LIMIT, le=FIXED_COMPETITOR_LIMIT)
     openai_model: str = Field(default="gpt-4.1-mini", min_length=1, max_length=100)
 
     @field_validator("search_provider")
@@ -21,6 +23,13 @@ class JobRuntimeSettings(BaseModel):
         if not cleaned:
             raise ValueError("生成モデルを入力してください。")
         return cleaned
+
+    @field_validator("competitor_limit")
+    @classmethod
+    def validate_competitor_limit(cls, value: int) -> int:
+        if value != FIXED_COMPETITOR_LIMIT:
+            raise ValueError(f"競合記事の取得件数は {FIXED_COMPETITOR_LIMIT} 件固定です。")
+        return value
 
 
 class JobCreateForm(BaseModel):

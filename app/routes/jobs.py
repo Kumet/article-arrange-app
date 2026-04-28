@@ -11,8 +11,9 @@ from sqlalchemy.orm import Session
 from app.core.config import get_settings
 from app.db import crud
 from app.db.session import get_db
-from app.schemas.job import JobCreateForm, JobRuntimeSettings
+from app.schemas.job import FIXED_COMPETITOR_LIMIT, JobCreateForm, JobRuntimeSettings
 from app.schemas.prompt import PromptTemplateForm
+from app.services.article_document import build_article_document_html
 from app.services.article_pipeline import run_article_job
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
@@ -28,7 +29,6 @@ def create_job(
     original_url: str = Form(...),
     target_keyword: str = Form(...),
     user_prompt: str = Form(default=""),
-    competitor_limit: int = Form(default=3),
     openai_model: str = Form(default=""),
     db: Session = Depends(get_db),
 ) -> HTMLResponse:
@@ -40,7 +40,7 @@ def create_job(
         )
         runtime_settings = JobRuntimeSettings(
             search_provider="ddgs",
-            competitor_limit=competitor_limit,
+            competitor_limit=FIXED_COMPETITOR_LIMIT,
             openai_model=openai_model or settings.openai_model,
         )
     except ValidationError as exc:
@@ -111,10 +111,19 @@ def get_job(request: Request, job_id: str, db: Session = Depends(get_db)) -> HTM
         context={
             "job": job,
             "generated_article": job.generated_article,
+            "preview_document_html": (
+                build_article_document_html(
+                    title=job.generated_article.title,
+                    meta_description=job.generated_article.meta_description,
+                    body_html=job.generated_article.article_html,
+                )
+                if job.generated_article
+                else ""
+            ),
             "polling_interval_seconds": settings.polling_interval_seconds,
             "runtime_settings": JobRuntimeSettings(
                 search_provider="ddgs",
-                competitor_limit=settings.competitor_result_limit,
+                competitor_limit=FIXED_COMPETITOR_LIMIT,
                 openai_model=settings.openai_model,
             ),
         },
@@ -134,6 +143,11 @@ def get_job_status(request: Request, job_id: str, db: Session = Depends(get_db))
             context={
                 "job": job,
                 "generated_article": job.generated_article,
+                "preview_document_html": build_article_document_html(
+                    title=job.generated_article.title,
+                    meta_description=job.generated_article.meta_description,
+                    body_html=job.generated_article.article_html,
+                ),
             },
         )
 
@@ -162,10 +176,19 @@ def get_job_result(request: Request, job_id: str, db: Session = Depends(get_db))
         context={
             "job": job,
             "generated_article": job.generated_article,
+            "preview_document_html": (
+                build_article_document_html(
+                    title=job.generated_article.title,
+                    meta_description=job.generated_article.meta_description,
+                    body_html=job.generated_article.article_html,
+                )
+                if job.generated_article
+                else ""
+            ),
             "polling_interval_seconds": settings.polling_interval_seconds,
             "runtime_settings": JobRuntimeSettings(
                 search_provider="ddgs",
-                competitor_limit=settings.competitor_result_limit,
+                competitor_limit=FIXED_COMPETITOR_LIMIT,
                 openai_model=settings.openai_model,
             ),
         },
@@ -182,7 +205,11 @@ def download_job_result(job_id: str, db: Session = Depends(get_db)) -> Response:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="生成結果がまだありません。")
 
     article = job.generated_article
-    document = _build_download_html(title=article.title, body_html=article.article_html)
+    document = build_article_document_html(
+        title=article.title,
+        meta_description=article.meta_description,
+        body_html=article.article_html,
+    )
     filename = _build_download_filename(article.title)
     headers = {
         "Content-Disposition": f'attachment; filename="{filename}"',
@@ -238,51 +265,6 @@ def activate_prompt_template_action(template_id: str, db: Session = Depends(get_
     if activated is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="プロンプトが見つかりません。")
     return RedirectResponse(url=f"/prompts?template_id={template_id}", status_code=status.HTTP_303_SEE_OTHER)
-
-
-def _build_download_html(*, title: str, body_html: str) -> str:
-    return f"""<!DOCTYPE html>
-<html lang="ja">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{title}</title>
-    <style>
-      body {{
-        margin: 0;
-        background: #f8fafc;
-        color: #0f172a;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      }}
-      main {{
-        max-width: 960px;
-        margin: 0 auto;
-        padding: 48px 24px 80px;
-      }}
-      h1, h2, h3 {{ color: #0f172a; }}
-      p, li {{ line-height: 1.8; }}
-      table {{
-        width: 100%;
-        border-collapse: collapse;
-        margin: 24px 0;
-      }}
-      th, td {{
-        border: 1px solid #cbd5e1;
-        padding: 12px;
-        text-align: left;
-      }}
-      thead {{ background: #e2e8f0; }}
-    </style>
-  </head>
-  <body>
-    <main>
-      <h1>{title}</h1>
-      {body_html}
-    </main>
-  </body>
-</html>
-"""
-
 
 def _build_download_filename(title: str) -> str:
     normalized = re.sub(r"\s+", "-", title.strip().lower())
