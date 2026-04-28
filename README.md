@@ -82,6 +82,8 @@ SQLite は Render Free Plan では永続化に向かないため、本番運用�
 
 - `SEARCH_PROVIDER=mock`
   ローカル確認向けです。固定の上位3記事を返します。
+- `SEARCH_PROVIDER=ddgs`
+  APIキー不要で検索できます。検索結果は `ddgs`、本文抽出は `trafilatura` を使います。
 - `SEARCH_PROVIDER=google`
   `GOOGLE_SEARCH_API_KEY` と `GOOGLE_SEARCH_ENGINE_ID` が必要です。
 - `SEARCH_PROVIDER=serpapi`
@@ -92,6 +94,7 @@ SQLite は Render Free Plan では永続化に向かないため、本番運用�
 - 背景処理は FastAPI の `BackgroundTasks` なので、単一プロセス前提の軽量MVPです。
 - `OPENAI_API_KEY` 未設定で `OPENAI_MODEL` が通常モデルのままだと、ジョブ作成時にエラー表示します。
 - 一部サイトはbot対策や利用規約により本文取得に失敗することがあります。
+- `ddgs` は無料で便利ですが、検索結果の安定性は正式APIより弱いです。
 - SQLite を使っているため、複数ワーカー構成や高負荷運用には向きません。
 
 ## コピーコンテンツ回避の設計思想

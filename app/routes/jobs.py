@@ -28,7 +28,6 @@ def create_job(
     original_url: str = Form(...),
     target_keyword: str = Form(...),
     user_prompt: str = Form(default=""),
-    search_provider: str = Form(default=""),
     competitor_limit: int = Form(default=3),
     openai_model: str = Form(default=""),
     db: Session = Depends(get_db),
@@ -40,7 +39,7 @@ def create_job(
             user_prompt=user_prompt,
         )
         runtime_settings = JobRuntimeSettings(
-            search_provider=search_provider or settings.normalized_search_provider,
+            search_provider="ddgs",
             competitor_limit=competitor_limit,
             openai_model=openai_model or settings.openai_model,
         )
@@ -114,7 +113,7 @@ def get_job(request: Request, job_id: str, db: Session = Depends(get_db)) -> HTM
             "generated_article": job.generated_article,
             "polling_interval_seconds": settings.polling_interval_seconds,
             "runtime_settings": JobRuntimeSettings(
-                search_provider=settings.normalized_search_provider,
+                search_provider="ddgs",
                 competitor_limit=settings.competitor_result_limit,
                 openai_model=settings.openai_model,
             ),
@@ -165,7 +164,7 @@ def get_job_result(request: Request, job_id: str, db: Session = Depends(get_db))
             "generated_article": job.generated_article,
             "polling_interval_seconds": settings.polling_interval_seconds,
             "runtime_settings": JobRuntimeSettings(
-                search_provider=settings.normalized_search_provider,
+                search_provider="ddgs",
                 competitor_limit=settings.competitor_result_limit,
                 openai_model=settings.openai_model,
             ),

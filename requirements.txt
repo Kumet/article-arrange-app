@@ -5,6 +5,7 @@ python-multipart
 sqlalchemy
 pydantic-settings
 httpx
+ddgs
 beautifulsoup4
 trafilatura
 python-dotenv

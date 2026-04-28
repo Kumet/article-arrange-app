@@ -11,12 +11,12 @@ body {
 }
 
 .loader-ring {
-  width: 2.75rem;
-  height: 2.75rem;
+  width: 2.4rem;
+  height: 2.4rem;
   border-radius: 9999px;
-  border: 4px solid rgba(255, 255, 255, 0.12);
-  border-top-color: rgba(255, 255, 255, 0.92);
-  animation: spin 0.9s linear infinite;
+  border: 3px solid rgba(255, 255, 255, 0.14);
+  border-top-color: rgba(255, 255, 255, 0.65);
+  animation: spin 1.8s linear infinite;
 }
 
 .preview-html table {

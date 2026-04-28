@@ -22,6 +22,8 @@ def search_keyword(
 
     if provider_name == "mock":
         return _mock_search_results(keyword, result_limit)
+    if provider_name == "ddgs":
+        return _ddgs_search(keyword, result_limit)
     if provider_name == "google":
         return _google_custom_search(keyword, result_limit)
     if provider_name == "serpapi":
@@ -52,6 +54,33 @@ def _mock_search_results(keyword: str, limit: int) -> list[SearchResultItem]:
         ),
     ]
     return fixtures[:limit]
+
+
+def _ddgs_search(keyword: str, limit: int) -> list[SearchResultItem]:
+    try:
+        from ddgs import DDGS
+    except ImportError as exc:  # pragma: no cover - dependency issue
+        raise SearchProviderError("ddgs がインストールされていません。requirements.txt を確認してください。") from exc
+
+    try:
+        with DDGS() as client:
+            items = list(client.text(keyword, max_results=limit))
+    except Exception as exc:  # noqa: BLE001
+        raise SearchProviderError("ddgs 検索に失敗しました。時間を置いて再試行してください。") from exc
+
+    results = [
+        SearchResultItem(
+            rank=index,
+            title=item.get("title", "タイトル未取得"),
+            url=item.get("href", ""),
+            snippet=item.get("body", "") or item.get("snippet", ""),
+        )
+        for index, item in enumerate(items[:limit], start=1)
+        if item.get("href")
+    ]
+    if not results:
+        raise SearchProviderError("ddgs から結果を取得できませんでした。別のキーワードで試してください。")
+    return results
 
 
 def _google_custom_search(keyword: str, limit: int) -> list[SearchResultItem]:

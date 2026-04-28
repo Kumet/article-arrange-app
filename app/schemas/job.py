@@ -10,8 +10,8 @@ class JobRuntimeSettings(BaseModel):
     @classmethod
     def validate_search_provider(cls, value: str) -> str:
         normalized = value.strip().lower()
-        if normalized not in {"mock", "google", "serpapi"}:
-            raise ValueError("検索プロバイダは mock / google / serpapi から選択してください。")
+        if normalized not in {"mock", "ddgs", "google", "serpapi"}:
+            raise ValueError("検索プロバイダは mock / ddgs / google / serpapi から選択してください。")
         return normalized
 
     @field_validator("openai_model")

@@ -49,18 +49,13 @@
             <span>設定を開く</span>
             <span class="text-xs text-stone-400 transition group-open:rotate-45">＋</span>
           </summary>
-          <div class="mt-4 grid gap-5 border-t border-white/10 pt-4 lg:grid-cols-3">
+          <div class="mt-4 grid gap-5 border-t border-white/10 pt-4 lg:grid-cols-[minmax(0,13rem)_minmax(0,1fr)_minmax(0,1fr)]">
             <div>
-              <label for="search_provider" class="mb-2 block text-sm font-medium text-stone-200">検索プロバイダ</label>
-              <select
-                id="search_provider"
-                name="search_provider"
-                class="w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none transition focus:border-white/35"
-              >
-                <option value="mock" {% if runtime_settings.search_provider == "mock" %}selected{% endif %}>mock</option>
-                <option value="google" {% if runtime_settings.search_provider == "google" %}selected{% endif %}>google</option>
-                <option value="serpapi" {% if runtime_settings.search_provider == "serpapi" %}selected{% endif %}>serpapi</option>
-              </select>
+              <label class="mb-2 block text-sm font-medium text-stone-200">検索プロバイダ</label>
+              <div class="rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-stone-200">
+                ddgs
+              </div>
+              <p class="mt-2 text-xs leading-5 text-stone-400">開発段階では `ddgs` に固定しています。</p>
             </div>
             <div>
               <label for="competitor_limit" class="mb-2 block text-sm font-medium text-stone-200">競合取得件数</label>

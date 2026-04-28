@@ -33,7 +33,7 @@ def index(
             "generated_article": job.generated_article if job else None,
             "polling_interval_seconds": settings.polling_interval_seconds,
             "runtime_settings": JobRuntimeSettings(
-                search_provider=settings.normalized_search_provider,
+                search_provider="ddgs",
                 competitor_limit=settings.competitor_result_limit,
                 openai_model=settings.openai_model,
             ),
