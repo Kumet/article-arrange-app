@@ -28,8 +28,11 @@ def generate_article(
     target_keyword: str,
     original_article: ExtractedArticleData,
     analysis: SeoAnalysis,
+    model_name: str | None = None,
 ) -> GeneratedArticlePayload:
-    if settings.openai_model.strip().lower() == "mock":
+    selected_model = (model_name or settings.openai_model).strip()
+
+    if selected_model.lower() == "mock":
         return _build_mock_article(target_keyword, original_article, analysis)
 
     if not settings.openai_api_key:
@@ -39,7 +42,7 @@ def generate_article(
 
     try:
         response = client.responses.create(
-            model=settings.openai_model,
+            model=selected_model,
             instructions=prompt.system,
             input=prompt.user,
         )

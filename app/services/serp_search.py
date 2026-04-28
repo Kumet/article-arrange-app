@@ -12,18 +12,22 @@ class SearchProviderError(Exception):
     """Raised when a search provider fails."""
 
 
-def search_keyword(keyword: str, limit: int | None = None) -> list[SearchResultItem]:
+def search_keyword(
+    keyword: str,
+    limit: int | None = None,
+    provider: str | None = None,
+) -> list[SearchResultItem]:
     result_limit = limit or settings.competitor_result_limit
-    provider = settings.normalized_search_provider
+    provider_name = (provider or settings.normalized_search_provider).strip().lower()
 
-    if provider == "mock":
+    if provider_name == "mock":
         return _mock_search_results(keyword, result_limit)
-    if provider == "google":
+    if provider_name == "google":
         return _google_custom_search(keyword, result_limit)
-    if provider == "serpapi":
+    if provider_name == "serpapi":
         return _serpapi_search(keyword, result_limit)
 
-    raise SearchProviderError(f"未対応の検索プロバイダです: {settings.search_provider}")
+    raise SearchProviderError(f"未対応の検索プロバイダです: {provider_name}")
 
 
 def _mock_search_results(keyword: str, limit: int) -> list[SearchResultItem]:

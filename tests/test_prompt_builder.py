@@ -41,6 +41,8 @@ def test_prompt_builder_includes_keyword_and_competitor_insights() -> None:
         target_keyword="SEO 記事 リライト",
         user_prompt="専門家向けにしてください。",
         analysis=analysis,
+        system_template="あなたは編集者です。",
+        user_template="キーワード: {{ target_keyword }}\n元記事: {{ original_article }}\n競合: {{ competitor_insights }}\n追加: {{ user_prompt }}",
     )
 
     assert "SEO 記事 リライト" in prompt.user
@@ -48,3 +50,4 @@ def test_prompt_builder_includes_keyword_and_competitor_insights() -> None:
     assert "比較表で整理する" in prompt.user
     assert "専門家向けにしてください。" in prompt.user
     assert "本文です。検索意図と読者ニーズの整理が重要です。" in prompt.user
+    assert prompt.system == "あなたは編集者です。"

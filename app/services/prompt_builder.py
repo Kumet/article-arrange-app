@@ -1,12 +1,6 @@
 from __future__ import annotations
 
-from pathlib import Path
-
-import yaml
-
 from app.schemas.article import ExtractedArticleData, PromptMessages, SeoAnalysis
-
-PROMPT_PATH = Path(__file__).resolve().parents[2] / "prompts" / "article_rewrite.yaml"
 
 
 def build_prompt(
@@ -15,9 +9,9 @@ def build_prompt(
     target_keyword: str,
     user_prompt: str,
     analysis: SeoAnalysis,
+    system_template: str,
+    user_template: str,
 ) -> PromptMessages:
-    payload = _load_prompt_template()
-
     original_article_text = _format_original_article(original_article)
     competitor_insights_text = _format_competitor_insights(analysis)
 
@@ -28,18 +22,9 @@ def build_prompt(
         "user_prompt": user_prompt or "特になし",
     }
 
-    system_prompt = payload["system"].strip()
-    user_prompt_text = _fill_template(payload["user"], replacements).strip()
+    system_prompt = system_template.strip()
+    user_prompt_text = _fill_template(user_template, replacements).strip()
     return PromptMessages(system=system_prompt, user=user_prompt_text)
-
-
-def _load_prompt_template() -> dict[str, str]:
-    with PROMPT_PATH.open("r", encoding="utf-8") as file:
-        payload = yaml.safe_load(file)
-    return {
-        "system": payload.get("system", ""),
-        "user": payload.get("user", ""),
-    }
 
 
 def _format_original_article(article: ExtractedArticleData) -> str:

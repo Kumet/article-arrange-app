@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <div class="grid gap-6 lg:grid-cols-[18rem_minmax(0,1fr)]">
+    <aside class="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5 shadow-xl shadow-black/30 backdrop-blur">
+      <div class="flex items-center justify-between gap-3">
+        <h2 class="text-lg font-semibold text-white">Prompt Versions</h2>
+        <a href="/" class="rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-xs font-medium text-stone-300 hover:border-white/30 hover:text-white">
+          戻る
+        </a>
+      </div>
+      <div class="mt-5 space-y-3">
+        {% for item in templates_list %}
+          <a
+            href="/prompts?template_id={{ item.id }}"
+            class="block rounded-2xl border {% if selected_template and selected_template.id == item.id %}border-white/25 bg-white/10{% else %}border-white/10 bg-black/20{% endif %} px-4 py-3 hover:border-white/25"
+          >
+            <div class="flex items-center justify-between gap-3">
+              <span class="text-sm font-medium text-white">v{{ item.version }}</span>
+              {% if item.is_active %}
+                <span class="rounded-full border border-white/15 bg-white/10 px-2 py-1 text-[10px] uppercase tracking-[0.2em] text-stone-300">Active</span>
+              {% endif %}
+            </div>
+            <p class="mt-2 text-xs text-stone-400">{{ item.updated_at }}</p>
+          </a>
+        {% endfor %}
+      </div>
+    </aside>
+
+    <section class="space-y-6">
+      <div class="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-xl shadow-black/30 backdrop-blur">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h2 class="text-xl font-semibold text-white">Prompt Editor</h2>
+            <p class="mt-2 text-sm text-stone-400">ジョブで使う `article_rewrite` テンプレートを編集・保存・有効化できます。</p>
+          </div>
+          <form action="/jobs/prompts" method="post">
+            <input type="hidden" name="system_prompt" value="{{ selected_template.system_prompt if selected_template else '' }}" />
+            <input type="hidden" name="user_prompt" value="{{ selected_template.user_prompt if selected_template else '' }}" />
+            <input type="hidden" name="is_active" value="0" />
+            <button class="rounded-2xl border border-white/15 bg-white px-4 py-3 text-sm font-semibold text-black hover:bg-stone-200">
+              複製して新バージョン作成
+            </button>
+          </form>
+        </div>
+      </div>
+
+      {% if selected_template %}
+        <form action="/jobs/prompts/{{ selected_template.id }}" method="post" class="space-y-6">
+          <div class="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-xl shadow-black/30 backdrop-blur">
+            <div class="mb-4 flex items-center justify-between gap-4">
+              <h3 class="text-lg font-semibold text-white">Version v{{ selected_template.version }}</h3>
+              {% if selected_template.is_active %}
+                <span class="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs uppercase tracking-[0.2em] text-stone-300">Active</span>
+              {% endif %}
+            </div>
+            <div class="space-y-5">
+              <div>
+                <label for="system_prompt" class="mb-2 block text-sm font-medium text-stone-200">System Prompt</label>
+                <textarea id="system_prompt" name="system_prompt" rows="10" class="w-full rounded-3xl border border-white/10 bg-black/25 px-4 py-3 font-mono text-sm text-white outline-none transition focus:border-white/35">{{ selected_template.system_prompt }}</textarea>
+              </div>
+              <div>
+                <label for="user_prompt" class="mb-2 block text-sm font-medium text-stone-200">User Prompt</label>
+                <textarea id="user_prompt" name="user_prompt" rows="18" class="w-full rounded-3xl border border-white/10 bg-black/25 px-4 py-3 font-mono text-sm text-white outline-none transition focus:border-white/35">{{ selected_template.user_prompt }}</textarea>
+              </div>
+            </div>
+            <div class="mt-6 flex flex-wrap gap-3">
+              <button class="rounded-2xl border border-white/15 bg-white px-4 py-3 text-sm font-semibold text-black hover:bg-stone-200">
+                保存
+              </button>
+            </div>
+          </div>
+        </form>
+
+        <div class="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-xl shadow-black/30 backdrop-blur">
+          <div class="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h3 class="text-lg font-semibold text-white">運用アクション</h3>
+              <p class="mt-2 text-sm text-stone-400">この版を有効化すると、次のジョブからこのプロンプトを使います。</p>
+            </div>
+            <form action="/jobs/prompts/{{ selected_template.id }}/activate" method="post">
+              <button class="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm font-semibold text-stone-100 hover:border-white/30 hover:text-white">
+                このバージョンを有効化
+              </button>
+            </form>
+          </div>
+        </div>
+      {% endif %}
+
+      <div class="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-xl shadow-black/30 backdrop-blur">
+        <h3 class="text-lg font-semibold text-white">使用できるテンプレート変数</h3>
+        <div class="mt-4 flex flex-wrap gap-3">
+          {% for variable in allowed_variables %}
+            <span class="rounded-2xl border border-white/10 bg-black/20 px-3 py-2 font-mono text-sm text-stone-200">{{ "{{ " }}{{ variable }}{{ " }}" }}</span>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+  </div>
+{% endblock %}
