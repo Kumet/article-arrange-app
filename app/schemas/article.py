@@ -61,6 +61,12 @@ class ReviewSection(BaseModel):
     bullets: list[str] = Field(default_factory=list)
 
 
+class ReviewTable(BaseModel):
+    caption: str = Field(min_length=1)
+    headers: list[str] = Field(min_length=2)
+    rows: list[list[str]] = Field(default_factory=list)
+
+
 class FixedReviewArticlePayload(BaseModel):
     title: str = Field(min_length=1)
     meta_description: str = Field(min_length=1)
@@ -68,9 +74,13 @@ class FixedReviewArticlePayload(BaseModel):
     price_line: str = Field(min_length=1)
     item_number_line: str = Field(min_length=1)
     lead_paragraphs: list[str] = Field(default_factory=list)
+    overview_section: ReviewSection
     detail_section: ReviewSection
     experience_section: ReviewSection
+    selection_section: ReviewSection
+    caution_section: ReviewSection
     summary_section: ReviewSection
+    comparison_table: ReviewTable
     recommendation_rating: int = Field(ge=1, le=5)
     copy_avoidance_notes: list[str] = Field(default_factory=list)
 
